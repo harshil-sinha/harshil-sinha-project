@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { Pool } from "pg";
 import moment from "moment";
-import { bookingValidation }  from "../Validations/bookingValidation";
+import { bookingValidation } from "../Validations/bookingValidation";
 import { getBookingByPNR, cancelBooking } from "../models/bookingModel";
-import pool from "../config/db"; 
+import pool from "../config/db";
 
 interface Booking {
   pnr: string;
@@ -12,7 +12,7 @@ interface Booking {
   journey_date: string;
   booking_status: string;
   total_amount: number;
-  seat_numbers: string;
+  seat_numbers: string[];
   user_name: string;
   gender: string;
   email: string;
@@ -23,12 +23,6 @@ interface Booking {
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { error, value } = bookingValidation.validate(req.body);
-    if (error) {
-      res.status(400).json({ message: error.details[0].message });
-      return;
-    }
-
     const {
       pnr,
       user_id,
@@ -43,7 +37,25 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
       from_city,
       to_city,
       booking_class,
-    }: Booking = value;
+    }: Booking = req.body;
+
+    if (
+      !pnr ||
+      !user_id ||
+      !train_id ||
+      !journey_date ||
+      !total_amount ||
+      !seat_numbers ||
+      !user_name ||
+      !gender ||
+      !email ||
+      !from_city ||
+      !to_city ||
+      !booking_class
+    ) {
+      res.status(400).json({ message: "Missing required fields 😡" });
+      return;
+    }
 
     const query = `
       INSERT INTO booking (
@@ -61,7 +73,7 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
       journey_date,
       booking_status || "Pending",
       total_amount,
-      seat_numbers,
+      seat_numbers.join(","),
       user_name,
       gender,
       email,
@@ -76,7 +88,7 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error(err.message);
+      console.error("Error occurred:", err.message);
       res.status(500).json({ message: "Internal server error 😡" });
     } else {
       console.error("Unknown error occurred");
@@ -156,9 +168,44 @@ const cancelTicket = async (req: Request, res: Response): Promise<void> => {
       refundAmount,
     });
   } catch (err) {
-    console.error(err);
+    if (err instanceof Error) {
+      console.error("Error occurred:", err.message);
+      res.status(500).json({ message: err.message });
+    } else {
+      console.error("Unknown error occurred");
+      res.status(500).json({ message: "Internal server error 😡" });
+    }
+  }
+};
+
+const getTicketsByEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    const query = `SELECT * FROM booking WHERE email = $1 ORDER BY booking_date DESC;`;
+    const result = await pool.query(query, [email]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: "No tickets found for this email" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      tickets: result.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching tickets:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-export { createBooking, cancelTicket };
+export { createBooking, cancelTicket, getTicketsByEmail };
