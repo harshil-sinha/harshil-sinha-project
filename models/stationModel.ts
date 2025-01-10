@@ -1,4 +1,3 @@
-import { PoolClient } from "pg";
 import pool from "../config/db";
 
 interface Station {
@@ -13,13 +12,13 @@ const createStation = async (
   station_name: string,
   location: string,
   station_code: string
-): Promise<Station | null> => {
+): Promise<Station[]> => {
   try {
     const result = await pool.query(
       `INSERT INTO stations(station_name, location, station_code) VALUES($1, $2, $3) RETURNING *`,
       [station_name, location, station_code]
     );
-    return result.rows[0] || null;
+    return result.rows || [];
   } catch (error) {
     console.error("Error creating station:", error);
     throw new Error("Error creating station");
@@ -29,19 +28,19 @@ const createStation = async (
 const getAllStation = async (): Promise<Station[]> => {
   try {
     const result = await pool.query("SELECT * FROM stations");
-    return result.rows;
+    return result.rows || [];
   } catch (error) {
     console.error("Error fetching stations:", error);
     throw new Error("Error fetching stations");
   }
 };
 
-const getStationById = async (id: string): Promise<Station | null> => {
+const getStationById = async (id: string): Promise<Station[]> => {
   try {
     const result = await pool.query("SELECT * FROM stations WHERE id = $1", [
       id,
     ]);
-    return result.rows[0] || null;
+    return result.rows || [];
   } catch (error) {
     console.error("Error fetching station:", error);
     throw new Error("Error fetching station");
@@ -53,13 +52,13 @@ const updateStationById = async (
   station_name: string,
   location: string,
   station_code: string
-): Promise<Station | null> => {
+): Promise<Station[]> => {
   try {
     const result = await pool.query(
       `UPDATE stations SET station_name = $1, location = $2, station_code = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
       [station_name, location, station_code, id]
     );
-    return result.rows[0] || null;
+    return result.rows || [];
   } catch (error) {
     console.error("Error updating station:", error);
     throw new Error("Error updating station");
@@ -74,13 +73,14 @@ const deleteStationById = async (id: string): Promise<void> => {
     throw new Error("Error deleting station");
   }
 };
+
 const getStationByName = async (stationName: string): Promise<Station[]> => {
   try {
     const result = await pool.query(
-      "SELECT * FROM stations WHERE LOWER(station_name) LIKE LOWER($1)",
+      "SELECT * FROM stations WHERE station_name ILIKE $1",
       [`%${stationName}%`]
     );
-    return result.rows;
+    return result.rows || [];
   } catch (error) {
     console.error("Error fetching stations by name:", error);
     throw new Error("Error fetching stations by name");
