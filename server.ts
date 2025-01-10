@@ -1,9 +1,9 @@
 import express, { Express } from "express";
 import cors from "cors";
-import stationRoutes from "./routes/stationRoutes";
-import userRoutes from "./routes/userRoutes";
-import searchRoutes from "./routes/searchRoutes";
-import bookingRoutes from "./routes/bookingRoutes";
+import stationRoutes from "./v1/routes/stationRoutes";
+import userRoutes from "./v1/routes/userRoutes";
+import searchRoutes from "./v1/routes/searchRoutes";
+import bookingRoutes from "./v1/routes/bookingRoutes";
 
 const app: Express = express();
 
