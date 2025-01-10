@@ -28,4 +28,4 @@ export const bookingValidation = Joi.object({
     .required(),
 });
 
-module.exports= bookingValidation; 
+module.exports = bookingValidation;
