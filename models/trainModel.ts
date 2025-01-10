@@ -14,15 +14,13 @@ interface Train {
   fare: number;
 }
 
-const getStationByName = async (
-  stationName: string
-): Promise<string | null> => {
+const getStationByName = async (stationName: string): Promise<string> => {
   try {
     const result = await pool.query(
-      "SELECT * FROM stations WHERE LOWER(station_name) LIKE LOWER($1)",
+      "SELECT * FROM stations WHERE station_name ILIKE $1",
       [`%${stationName}%`]
     );
-    return result.rows[0] ? result.rows[0].id : null;
+    return result.rows[0]?.id || ""; 
   } catch (error) {
     console.error("Error fetching station by name:", error);
     throw new Error("Error fetching station by name");
